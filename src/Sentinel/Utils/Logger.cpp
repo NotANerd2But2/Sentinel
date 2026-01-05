@@ -20,6 +20,15 @@ void Logger::Initialize() {
         // Get handle to standard output
         consoleHandle_ = GetStdHandle(STD_OUTPUT_HANDLE);
         
+        // Validate console handle
+        if (consoleHandle_ == INVALID_HANDLE_VALUE || consoleHandle_ == nullptr) {
+            // If console is not available, set default attributes and mark as initialized
+            // Logging will continue without colors
+            defaultAttributes_ = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
+            initialized_ = true;
+            return;
+        }
+        
         // Get default console attributes
         CONSOLE_SCREEN_BUFFER_INFO consoleInfo;
         if (GetConsoleScreenBufferInfo(consoleHandle_, &consoleInfo)) {
@@ -41,14 +50,18 @@ void Logger::LogInfo(const std::string& message) {
         Initialize();
     }
     
-    // Set green color (bright green)
-    SetConsoleTextAttribute(consoleHandle_, FOREGROUND_GREEN | FOREGROUND_INTENSITY);
+    // Set green color (bright green) if console is available
+    if (consoleHandle_ != INVALID_HANDLE_VALUE && consoleHandle_ != nullptr) {
+        SetConsoleTextAttribute(consoleHandle_, FOREGROUND_GREEN | FOREGROUND_INTENSITY);
+    }
     
     // Output message
     std::cout << "[INFO] " << message << std::endl;
     
-    // Restore default color
-    SetConsoleTextAttribute(consoleHandle_, defaultAttributes_);
+    // Restore default color if console is available
+    if (consoleHandle_ != INVALID_HANDLE_VALUE && consoleHandle_ != nullptr) {
+        SetConsoleTextAttribute(consoleHandle_, defaultAttributes_);
+    }
 }
 
 void Logger::LogError(const std::string& message) {
@@ -59,14 +72,18 @@ void Logger::LogError(const std::string& message) {
         Initialize();
     }
     
-    // Set red color (bright red)
-    SetConsoleTextAttribute(consoleHandle_, FOREGROUND_RED | FOREGROUND_INTENSITY);
+    // Set red color (bright red) if console is available
+    if (consoleHandle_ != INVALID_HANDLE_VALUE && consoleHandle_ != nullptr) {
+        SetConsoleTextAttribute(consoleHandle_, FOREGROUND_RED | FOREGROUND_INTENSITY);
+    }
     
     // Output message
     std::cout << "[ERROR] " << message << std::endl;
     
-    // Restore default color
-    SetConsoleTextAttribute(consoleHandle_, defaultAttributes_);
+    // Restore default color if console is available
+    if (consoleHandle_ != INVALID_HANDLE_VALUE && consoleHandle_ != nullptr) {
+        SetConsoleTextAttribute(consoleHandle_, defaultAttributes_);
+    }
 }
 
 } // namespace Utils
