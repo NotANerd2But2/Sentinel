@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 
-# Enforce Windows x64 platform
+# Enforce Windows x64 platform (before project() to avoid toolchain detection issues)
 if(NOT WIN32)
     message(FATAL_ERROR "This project is designed for Windows x64 only.")
 endif()

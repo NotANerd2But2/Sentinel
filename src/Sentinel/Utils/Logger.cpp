@@ -17,6 +17,9 @@ WORD Logger::defaultAttributes_ = 0;
 WORD Logger::errorDefaultAttributes_ = 0;
 bool Logger::initialized_ = false;
 
+// Default console color attributes (white text on black background)
+static constexpr WORD DEFAULT_CONSOLE_ATTRIBUTES = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
+
 bool Logger::IsConsoleAvailable(HANDLE handle) {
     return (handle != INVALID_HANDLE_VALUE && handle != nullptr);
 }
@@ -35,12 +38,12 @@ void Logger::Initialize() {
             if (GetConsoleScreenBufferInfo(consoleHandle_, &consoleInfo)) {
                 defaultAttributes_ = consoleInfo.wAttributes;
             } else {
-                // Fallback to white text on black background
-                defaultAttributes_ = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
+                // Fallback to default console attributes
+                defaultAttributes_ = DEFAULT_CONSOLE_ATTRIBUTES;
             }
         } else {
             // If stdout console is not available, set default attributes
-            defaultAttributes_ = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
+            defaultAttributes_ = DEFAULT_CONSOLE_ATTRIBUTES;
         }
         
         // Get default console attributes for stderr
@@ -49,12 +52,12 @@ void Logger::Initialize() {
             if (GetConsoleScreenBufferInfo(errorConsoleHandle_, &errorConsoleInfo)) {
                 errorDefaultAttributes_ = errorConsoleInfo.wAttributes;
             } else {
-                // Fallback to white text on black background
-                errorDefaultAttributes_ = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
+                // Fallback to default console attributes
+                errorDefaultAttributes_ = DEFAULT_CONSOLE_ATTRIBUTES;
             }
         } else {
             // If stderr console is not available, set default attributes
-            errorDefaultAttributes_ = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
+            errorDefaultAttributes_ = DEFAULT_CONSOLE_ATTRIBUTES;
         }
         
         initialized_ = true;
