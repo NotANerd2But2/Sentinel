@@ -10,6 +10,10 @@
 namespace Sentinel {
 namespace Bedrock {
 
+// Page size mask for address sanitization (4KB = 0x1000, mask = 0xFFF)
+// Masking lower 12 bits aligns addresses to page boundaries to prevent ASLR bypass
+static constexpr uintptr_t PAGE_OFFSET_MASK = 0xFFFULL;
+
 bool CrashInterceptor::Initialize() {
     // Register the Vectored Exception Handler with priority 1
     // Priority 1 ensures we execute before most handlers but after critical system handlers
@@ -49,15 +53,21 @@ LONG WINAPI CrashInterceptor::HandlerRoutine(PEXCEPTION_POINTERS ExceptionInfo) 
         
         // Sanitize address to prevent ASLR bypass: mask lower 12 bits (4KB page boundary)
         // This provides forensic information while protecting address space layout
-        uintptr_t sanitizedAddress = reinterpret_cast<uintptr_t>(faultingAddress) & ~0xFFFULL;
+        uintptr_t sanitizedAddress = reinterpret_cast<uintptr_t>(faultingAddress) & ~PAGE_OFFSET_MASK;
         
         // Format log message using stack-based buffer to avoid heap allocation in exception handler
         char logBuffer[256];
-        sprintf_s(logBuffer, sizeof(logBuffer),
-                  "[CRITICAL] Guard Page Violation Detected at 0x%016llX (page-aligned)!",
-                  static_cast<unsigned long long>(sanitizedAddress));
+        int result = sprintf_s(logBuffer, sizeof(logBuffer),
+                               "[CRITICAL] Guard Page Violation Detected at 0x%016llX (page-aligned)!",
+                               static_cast<unsigned long long>(sanitizedAddress));
         
-        Utils::Logger::LogError(logBuffer);
+        // Only log if formatting succeeded
+        if (result > 0) {
+            Utils::Logger::LogError(logBuffer);
+        } else {
+            // Fallback message if formatting fails (should never happen with static format)
+            Utils::Logger::LogError("[CRITICAL] Guard Page Violation Detected (formatting error)!");
+        }
         
         // NOTE: This is where JIT decryption logic will be implemented in the future.
         // The JIT decryption process will:
@@ -90,7 +100,7 @@ LONG WINAPI CrashInterceptor::HandlerRoutine(PEXCEPTION_POINTERS ExceptionInfo) 
         
         // Sanitize address to prevent ASLR bypass: mask lower 12 bits (4KB page boundary)
         // This provides forensic information while protecting address space layout
-        uintptr_t sanitizedAddress = reinterpret_cast<uintptr_t>(faultingAddress) & ~0xFFFULL;
+        uintptr_t sanitizedAddress = reinterpret_cast<uintptr_t>(faultingAddress) & ~PAGE_OFFSET_MASK;
         
         // Decode access type string
         const char* accessTypeStr = "Access to";
@@ -111,12 +121,18 @@ LONG WINAPI CrashInterceptor::HandlerRoutine(PEXCEPTION_POINTERS ExceptionInfo) 
         
         // Format log message using stack-based buffer to avoid heap allocation in exception handler
         char logBuffer[256];
-        sprintf_s(logBuffer, sizeof(logBuffer),
-                  "[CRITICAL] Access Violation! %s address 0x%016llX (page-aligned)",
-                  accessTypeStr,
-                  static_cast<unsigned long long>(sanitizedAddress));
+        int result = sprintf_s(logBuffer, sizeof(logBuffer),
+                               "[CRITICAL] Access Violation! %s address 0x%016llX (page-aligned)",
+                               accessTypeStr,
+                               static_cast<unsigned long long>(sanitizedAddress));
         
-        Utils::Logger::LogError(logBuffer);
+        // Only log if formatting succeeded
+        if (result > 0) {
+            Utils::Logger::LogError(logBuffer);
+        } else {
+            // Fallback message if formatting fails (should never happen with static format)
+            Utils::Logger::LogError("[CRITICAL] Access Violation (formatting error)!");
+        }
         
         // Continue the exception search chain
         // This allows the application's normal exception handling to proceed
