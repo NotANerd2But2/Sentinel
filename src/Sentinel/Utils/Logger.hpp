@@ -105,19 +105,11 @@ private:
      * @brief Handle to the standard output console.
      * 
      * @details Retrieved via GetStdHandle(STD_OUTPUT_HANDLE) and used for
-     * setting console text attributes. Cached as a static member to avoid
-     * repeated API calls.
+     * setting console text attributes. In Windows, stdout and stderr share
+     * the same console buffer, so this handle is used for both informational
+     * and error messages. Cached as a static member to avoid repeated API calls.
      */
     static HANDLE consoleHandle_;
-
-    /**
-     * @brief Handle to the standard error console.
-     * 
-     * @details Retrieved via GetStdHandle(STD_ERROR_HANDLE) and used for
-     * setting console text attributes for error messages. Cached as a static
-     * member to avoid repeated API calls.
-     */
-    static HANDLE errorConsoleHandle_;
 
     /**
      * @brief Default console text attributes.
