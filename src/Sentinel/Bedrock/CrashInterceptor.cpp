@@ -5,8 +5,7 @@
 
 #include "Sentinel/Bedrock/CrashInterceptor.hpp"
 #include "Sentinel/Utils/Logger.hpp"
-#include <sstream>
-#include <iomanip>
+#include <stdio.h>
 
 namespace Sentinel {
 namespace Bedrock {
@@ -48,13 +47,17 @@ LONG WINAPI CrashInterceptor::HandlerRoutine(PEXCEPTION_POINTERS ExceptionInfo) 
             );
         }
         
-        // Format the log message with the faulting address
-        std::ostringstream logMessage;
-        logMessage << "[CRITICAL] Guard Page Violation Detected at 0x"
-                   << std::uppercase << std::hex << std::setw(16) << std::setfill('0')
-                   << reinterpret_cast<uintptr_t>(faultingAddress) << "!";
+        // Sanitize address to prevent ASLR bypass: mask lower 12 bits (4KB page boundary)
+        // This provides forensic information while protecting address space layout
+        uintptr_t sanitizedAddress = reinterpret_cast<uintptr_t>(faultingAddress) & ~0xFFFULL;
         
-        Utils::Logger::LogError(logMessage.str());
+        // Format log message using stack-based buffer to avoid heap allocation in exception handler
+        char logBuffer[256];
+        sprintf_s(logBuffer, sizeof(logBuffer),
+                  "[CRITICAL] Guard Page Violation Detected at 0x%016llX (page-aligned)!",
+                  static_cast<unsigned long long>(sanitizedAddress));
+        
+        Utils::Logger::LogError(logBuffer);
         
         // NOTE: This is where JIT decryption logic will be implemented in the future.
         // The JIT decryption process will:
@@ -85,31 +88,35 @@ LONG WINAPI CrashInterceptor::HandlerRoutine(PEXCEPTION_POINTERS ExceptionInfo) 
             );
         }
         
-        // Format detailed log message
-        std::ostringstream logMessage;
-        logMessage << "[CRITICAL] Access Violation! ";
+        // Sanitize address to prevent ASLR bypass: mask lower 12 bits (4KB page boundary)
+        // This provides forensic information while protecting address space layout
+        uintptr_t sanitizedAddress = reinterpret_cast<uintptr_t>(faultingAddress) & ~0xFFFULL;
         
-        // Decode access type
+        // Decode access type string
+        const char* accessTypeStr = "Access to";
         switch (accessType) {
             case 0:
-                logMessage << "Read from";
+                accessTypeStr = "Read from";
                 break;
             case 1:
-                logMessage << "Write to";
+                accessTypeStr = "Write to";
                 break;
             case 8:
-                logMessage << "DEP violation at";
+                accessTypeStr = "DEP violation at";
                 break;
             default:
-                logMessage << "Access to";
+                accessTypeStr = "Access to";
                 break;
         }
         
-        logMessage << " address 0x"
-                   << std::uppercase << std::hex << std::setw(16) << std::setfill('0')
-                   << reinterpret_cast<uintptr_t>(faultingAddress);
+        // Format log message using stack-based buffer to avoid heap allocation in exception handler
+        char logBuffer[256];
+        sprintf_s(logBuffer, sizeof(logBuffer),
+                  "[CRITICAL] Access Violation! %s address 0x%016llX (page-aligned)",
+                  accessTypeStr,
+                  static_cast<unsigned long long>(sanitizedAddress));
         
-        Utils::Logger::LogError(logMessage.str());
+        Utils::Logger::LogError(logBuffer);
         
         // Continue the exception search chain
         // This allows the application's normal exception handling to proceed

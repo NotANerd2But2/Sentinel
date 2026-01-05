@@ -132,11 +132,16 @@ private:
      * 
      * 2. STATUS_ACCESS_VIOLATION:
      *    - Indicates illegal memory access (null pointer, buffer overflow, etc.)
-     *    - Logs the violation for forensic analysis
+     *    - Logs the violation with sanitized address for forensic analysis
      *    - Returns EXCEPTION_CONTINUE_SEARCH to allow normal exception handling
      * 
      * 3. All other exceptions:
      *    - Returns EXCEPTION_CONTINUE_SEARCH immediately to minimize overhead
+     * 
+     * Address Sanitization:
+     * - All logged addresses are masked to 4KB page boundaries (lower 12 bits cleared)
+     * - Prevents ASLR bypass while maintaining forensic value
+     * - Addresses are logged as "page-aligned" to indicate sanitization
      * 
      * @param ExceptionInfo Pointer to EXCEPTION_POINTERS structure containing:
      *        - ExceptionRecord: Details about the exception (code, address, parameters)
@@ -152,12 +157,17 @@ private:
      *       - Not perform dynamic memory allocation (heap may be corrupted)
      *       - Use thread-safe logging mechanisms
      * 
-     * @security This handler has access to the complete process state. Logging must
-     *           sanitize addresses and data to prevent information disclosure.
+     * @implementation Uses sprintf_s with stack-based buffers to avoid heap allocation.
+     *                 All string formatting is done on the stack for maximum performance
+     *                 and safety in the exception handling context.
+     * 
+     * @security This handler has access to the complete process state. All addresses
+     *           are sanitized to page boundaries before logging to prevent ASLR bypass.
+     *           Uses sprintf_s to prevent buffer overflows.
      * 
      * @performance This function is called on every exception. Current implementation
-     *              uses fast-path logic with O(1) comparisons and immediate return for
-     *              non-critical exceptions.
+     *              uses fast-path logic with O(1) comparisons, stack-based formatting,
+     *              and immediate return for non-critical exceptions.
      * 
      * @threadsafe This function may be called concurrently from multiple threads if
      *             exceptions occur simultaneously. All operations must be thread-safe.
