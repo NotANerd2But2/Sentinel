@@ -12,31 +12,49 @@ namespace Utils {
 // Static member initialization
 std::mutex Logger::consoleMutex_;
 HANDLE Logger::consoleHandle_ = nullptr;
+HANDLE Logger::errorConsoleHandle_ = nullptr;
 WORD Logger::defaultAttributes_ = 0;
+WORD Logger::errorDefaultAttributes_ = 0;
 bool Logger::initialized_ = false;
+
+bool Logger::IsConsoleAvailable(HANDLE handle) {
+    return (handle != INVALID_HANDLE_VALUE && handle != nullptr);
+}
 
 void Logger::Initialize() {
     if (!initialized_) {
         // Get handle to standard output
-        // Note: In Windows, stdout and stderr share the same console buffer
         consoleHandle_ = GetStdHandle(STD_OUTPUT_HANDLE);
         
-        // Validate console handle
-        if (consoleHandle_ == INVALID_HANDLE_VALUE || consoleHandle_ == nullptr) {
-            // If console is not available, set default attributes and mark as initialized
-            // Logging will continue without colors
+        // Get handle to standard error (for proper handling when streams are redirected separately)
+        errorConsoleHandle_ = GetStdHandle(STD_ERROR_HANDLE);
+        
+        // Get default console attributes for stdout
+        if (IsConsoleAvailable(consoleHandle_)) {
+            CONSOLE_SCREEN_BUFFER_INFO consoleInfo;
+            if (GetConsoleScreenBufferInfo(consoleHandle_, &consoleInfo)) {
+                defaultAttributes_ = consoleInfo.wAttributes;
+            } else {
+                // Fallback to white text on black background
+                defaultAttributes_ = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
+            }
+        } else {
+            // If stdout console is not available, set default attributes
             defaultAttributes_ = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
-            initialized_ = true;
-            return;
         }
         
-        // Get default console attributes
-        CONSOLE_SCREEN_BUFFER_INFO consoleInfo;
-        if (GetConsoleScreenBufferInfo(consoleHandle_, &consoleInfo)) {
-            defaultAttributes_ = consoleInfo.wAttributes;
+        // Get default console attributes for stderr
+        if (IsConsoleAvailable(errorConsoleHandle_)) {
+            CONSOLE_SCREEN_BUFFER_INFO errorConsoleInfo;
+            if (GetConsoleScreenBufferInfo(errorConsoleHandle_, &errorConsoleInfo)) {
+                errorDefaultAttributes_ = errorConsoleInfo.wAttributes;
+            } else {
+                // Fallback to white text on black background
+                errorDefaultAttributes_ = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
+            }
         } else {
-            // Fallback to white text on black background if unable to retrieve
-            defaultAttributes_ = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
+            // If stderr console is not available, set default attributes
+            errorDefaultAttributes_ = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
         }
         
         initialized_ = true;
@@ -52,15 +70,15 @@ void Logger::LogInfo(const std::string& message) {
     }
     
     // Set green color (bright green) if console is available
-    if (consoleHandle_ != INVALID_HANDLE_VALUE && consoleHandle_ != nullptr) {
+    if (IsConsoleAvailable(consoleHandle_)) {
         SetConsoleTextAttribute(consoleHandle_, FOREGROUND_GREEN | FOREGROUND_INTENSITY);
     }
     
-    // Output message
+    // Output message to stdout
     std::cout << "[INFO] " << message << std::endl;
     
     // Restore default color if console is available
-    if (consoleHandle_ != INVALID_HANDLE_VALUE && consoleHandle_ != nullptr) {
+    if (IsConsoleAvailable(consoleHandle_)) {
         SetConsoleTextAttribute(consoleHandle_, defaultAttributes_);
     }
 }
@@ -74,18 +92,17 @@ void Logger::LogError(const std::string& message) {
     }
     
     // Set red color (bright red) if console is available
-    // Note: In Windows, stdout and stderr share the same console buffer,
-    // so we use the main console handle for color attributes
-    if (consoleHandle_ != INVALID_HANDLE_VALUE && consoleHandle_ != nullptr) {
-        SetConsoleTextAttribute(consoleHandle_, FOREGROUND_RED | FOREGROUND_INTENSITY);
+    // Use stderr handle for proper handling when streams are redirected separately
+    if (IsConsoleAvailable(errorConsoleHandle_)) {
+        SetConsoleTextAttribute(errorConsoleHandle_, FOREGROUND_RED | FOREGROUND_INTENSITY);
     }
     
     // Output message to stderr
     std::cerr << "[ERROR] " << message << std::endl;
     
     // Restore default color if console is available
-    if (consoleHandle_ != INVALID_HANDLE_VALUE && consoleHandle_ != nullptr) {
-        SetConsoleTextAttribute(consoleHandle_, defaultAttributes_);
+    if (IsConsoleAvailable(errorConsoleHandle_)) {
+        SetConsoleTextAttribute(errorConsoleHandle_, errorDefaultAttributes_);
     }
 }
 

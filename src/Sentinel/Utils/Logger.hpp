@@ -105,11 +105,29 @@ private:
      * @brief Handle to the standard output console.
      * 
      * @details Retrieved via GetStdHandle(STD_OUTPUT_HANDLE) and used for
-     * setting console text attributes. In Windows, stdout and stderr share
-     * the same console buffer, so this handle is used for both informational
-     * and error messages. Cached as a static member to avoid repeated API calls.
+     * setting console text attributes for informational messages.
+     * Cached as a static member to avoid repeated API calls.
      */
     static HANDLE consoleHandle_;
+
+    /**
+     * @brief Handle to the standard error console.
+     * 
+     * @details Retrieved via GetStdHandle(STD_ERROR_HANDLE) and used for
+     * setting console text attributes for error messages. This ensures
+     * proper color handling when stdout and stderr are redirected separately.
+     * Cached as a static member to avoid repeated API calls.
+     */
+    static HANDLE errorConsoleHandle_;
+
+    /**
+     * @brief Default console text attributes for error console.
+     * 
+     * @details Stores the original console color attributes for stderr to restore
+     * after colored logging. Retrieved during static initialization via
+     * GetConsoleScreenBufferInfo.
+     */
+    static WORD errorDefaultAttributes_;
 
     /**
      * @brief Default console text attributes.
@@ -127,6 +145,16 @@ private:
      * only once. Set to true after first initialization.
      */
     static bool initialized_;
+
+    /**
+     * @brief Checks if a console handle is valid and available.
+     * 
+     * @param handle The console handle to check.
+     * @return true if the handle is valid and available, false otherwise.
+     * 
+     * @note This is a helper method to reduce code duplication in validation logic.
+     */
+    static bool IsConsoleAvailable(HANDLE handle);
 
     /**
      * @brief Initializes console handle and default attributes.
