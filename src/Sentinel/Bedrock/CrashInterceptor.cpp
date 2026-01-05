@@ -10,6 +10,15 @@
 namespace Sentinel {
 namespace Bedrock {
 
+// Windows exception codes (defined explicitly to ensure availability across all build configurations)
+#ifndef STATUS_GUARD_PAGE_VIOLATION
+#define STATUS_GUARD_PAGE_VIOLATION 0x80000001L
+#endif
+
+#ifndef STATUS_ACCESS_VIOLATION
+#define STATUS_ACCESS_VIOLATION 0xC0000005L
+#endif
+
 // Page size mask for address sanitization (4KB = 0x1000, mask = 0xFFF)
 // Masking lower 12 bits aligns addresses to page boundaries to prevent ASLR bypass
 static constexpr uintptr_t PAGE_OFFSET_MASK = 0xFFFULL;
