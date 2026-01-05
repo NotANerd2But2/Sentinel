@@ -3,10 +3,12 @@
 # Collect source files
 set(SENTINEL_SOURCES
     Sentinel/Utils/Logger.cpp
+    Sentinel/Bedrock/CrashInterceptor.cpp
 )
 
 set(SENTINEL_HEADERS
     Sentinel/Utils/Logger.hpp
+    Sentinel/Bedrock/CrashInterceptor.hpp
 )
 
 # Create static library
@@ -31,6 +33,8 @@ target_link_libraries(SentinelCore
 # Organize files in IDE
 source_group("Source Files\\Utils" FILES Sentinel/Utils/Logger.cpp)
 source_group("Header Files\\Utils" FILES Sentinel/Utils/Logger.hpp)
+source_group("Source Files\\Bedrock" FILES Sentinel/Bedrock/CrashInterceptor.cpp)
+source_group("Header Files\\Bedrock" FILES Sentinel/Bedrock/CrashInterceptor.hpp)
 
 # Create test executable (for demonstration purposes)
 add_executable(SentinelTest main.cpp)
