@@ -1,18 +1,29 @@
 /**
  * @file main.cpp
- * @brief Simple test application to demonstrate the Sentinel Logger functionality.
+ * @brief Simple test application to demonstrate the Sentinel functionality.
  */
 
 #include "Sentinel/Utils/Logger.hpp"
+#include "Sentinel/Bedrock/CrashInterceptor.hpp"
 #include <thread>
 #include <chrono>
 
 int main() {
     using namespace Sentinel::Utils;
+    using namespace Sentinel::Bedrock;
     
     // Test basic logging
     Logger::LogInfo("Sentinel System Monitor - Build System Test");
     Logger::LogInfo("Testing thread-safe logger with colored output");
+    
+    // Initialize Crash Interceptor
+    Logger::LogInfo("Initializing Crash Interceptor (Module A: Bedrock)...");
+    CrashInterceptor interceptor;
+    if (interceptor.Initialize()) {
+        Logger::LogInfo("Crash Interceptor is now monitoring for critical exceptions");
+    } else {
+        Logger::LogError("Failed to initialize Crash Interceptor");
+    }
     
     // Test error logging
     Logger::LogError("This is a test error message");
