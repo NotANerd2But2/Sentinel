@@ -31,3 +31,7 @@ target_link_libraries(SentinelCore
 # Organize files in IDE
 source_group("Source Files\\Utils" FILES Sentinel/Utils/Logger.cpp)
 source_group("Header Files\\Utils" FILES Sentinel/Utils/Logger.hpp)
+
+# Create test executable (for demonstration purposes)
+add_executable(SentinelTest main.cpp)
+target_link_libraries(SentinelTest PRIVATE SentinelCore)
