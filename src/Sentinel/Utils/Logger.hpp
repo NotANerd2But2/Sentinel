@@ -73,10 +73,11 @@ public:
     /**
      * @brief Logs an error message to the console in red text.
      * 
-     * @details Outputs the provided message to stdout with red color attribute
+     * @details Outputs the provided message to stderr with red color attribute
      * (FOREGROUND_RED | FOREGROUND_INTENSITY). This method is thread-safe and
      * can be called concurrently from multiple threads without risking garbled
-     * output.
+     * output. Error messages are sent to stderr to enable proper separation
+     * from standard output and to support shell redirection.
      * 
      * @param message The error message to log.
      * 
@@ -108,6 +109,15 @@ private:
      * repeated API calls.
      */
     static HANDLE consoleHandle_;
+
+    /**
+     * @brief Handle to the standard error console.
+     * 
+     * @details Retrieved via GetStdHandle(STD_ERROR_HANDLE) and used for
+     * setting console text attributes for error messages. Cached as a static
+     * member to avoid repeated API calls.
+     */
+    static HANDLE errorConsoleHandle_;
 
     /**
      * @brief Default console text attributes.
